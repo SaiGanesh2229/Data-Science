@@ -1,0 +1,48 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+# Load the dataset
+df = pd.read_csv('customer_data.csv')
+
+# Data cleaning
+df.drop_duplicates(inplace=True)
+df.dropna(inplace=True)
+
+# Feature engineering
+df['TotalAmount'] = df['Quantity'] * df['Price']
+df['Recency'] = pd.to_datetime('2013-12-31') - pd.to_datetime(df['InvoiceDate'])
+
+# Convert Recency to numeric value
+df['Recency'] = df['Recency'].dt.days
+
+# Standardize the features
+scaler = StandardScaler()
+scaled_df = scaler.fit_transform(df[['TotalAmount', 'Recency']])
+
+# Perform K-means clustering
+kmeans = KMeans(n_clusters=4, random_state=42)
+kmeans.fit(scaled_df)
+
+# Add cluster labels to the original dataframe
+df['Cluster'] = kmeans.labels_
+
+# EDA and analysis
+cluster_counts = df['Cluster'].value_counts()
+print("Cluster Counts:")
+print(cluster_counts)
+
+# Visualize the clusters
+plt.figure(figsize=(8, 6))
+plt.scatter(df['TotalAmount'], df['Recency'], c=df['Cluster'], cmap='viridis')
+plt.xlabel('Total Amount')
+plt.ylabel('Recency')
+plt.title('Customer Segmentation')
+plt.show()
+
+# Evaluate the clustering using silhouette score
+silhouette_avg = silhouette_score(scaled_df, kmeans.labels_)
+print("Silhouette Score:", silhouette_avg)
